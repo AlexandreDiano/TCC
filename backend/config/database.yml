@@ -1,0 +1,26 @@
+development:
+  adapter: postgresql
+  database: smartdoor_development
+  url: postgres://postgres@db
+  #url: db
+  user: postgres
+  password: 123456
+  pool: 5
+  timeout: 5000
+test:
+  adapter: postgresql
+  database: smartdoor_test
+#  user: postgres
+#  password: admin
+  pool: 5
+  timeout: 5000
+
+production:
+  adapter: postgresql
+  database: smartdoor_production
+  #url: postgres://postgres@db
+  url: db
+  user: postgres
+  password: 123456
+  pool: 5
+  timeout: 5000

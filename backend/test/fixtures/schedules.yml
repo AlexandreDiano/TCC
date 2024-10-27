@@ -1,0 +1,11 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  entry: 2020-08-09 21:01:34
+  exit: 2020-08-09 21:01:34
+  permission: one
+
+two:
+  entry: 2020-08-09 21:01:34
+  exit: 2020-08-09 21:01:34
+  permission: two

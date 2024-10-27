@@ -1,0 +1,946 @@
+{
+	"info": {
+		"_postman_id": "454b7c22-fb6d-422d-8d14-63f88c5f5f55",
+		"name": "SmartDoor - local",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Acesso",
+			"item": [
+				{
+					"name": "signup",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJqdGkiOiI1YjVjNjgwZC0yMjVhLTQ1ODktODRlNy0wMTkyYTczZGRiNzAiLCJzdWIiOiI1Iiwic2NwIjoidXNlciIsImF1ZCI6bnVsbCwiaWF0IjoxNjAwNjQ3MzgxLCJleHAiOjE2MDA3MzM3ODF9.8bjnmoB30X_dtK7ks6C0R4kpy4h75xrB-88eedm_3II",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "    {\n        \"user\": {\n            \"cpf\": \"12345678910\",\n            \"username\":\"user10\",\n            \"password\": \"senha123\",\n            \"email\": \"teste@teste.com\",\n            \"name\": \"Elielson\",\n            \"surname\": \"Santos\",\n            \"roletype\": 2\n        }\n    }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseurl}}/signup",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"signup"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "2a01e7a8-c2b8-4034-b2b6-ae9771f10985",
+								"exec": [
+									"pm.environment.set(\"token\", postman.getResponseHeader(\"Authorization\"))"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user\": {\n        \"username\": \"superuser1\",\n        \"password\": \"senhasuperuser1\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseurl}}/login",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "logout",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user\": {\n        \"email\": \"abacate@abacate.com.br\",\n        \"password\": \"relogio123\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseurl}}/logout",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"logout"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Portas",
+			"item": [
+				{
+					"name": "Lista Portas por user(superuser)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseurl}}/doors",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"doors"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar uma porta (superuser)",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseurl}}/doors/1",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"doors",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Lista Portas por user(admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseurl}}/doors",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"doors"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cadastrar nova porta(admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"door\":{\r\n        \"identification\": \"123456789\",\r\n        \"description\": \"porta Teste postman\"\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseurl}}/doors",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"doors"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Vincular porta(superuser)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"identification\": \"123456789\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseurl}}/doors/link",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"doors",
+								"link"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Solicita Abertura remota(superuser)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseurl}}/doors/1/openremote",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"doors",
+								"1",
+								"openremote"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Usuarios",
+			"item": [
+				{
+					"name": "Lista usuarios",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseurl}}/users",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Mostra  um usuario",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseurl}}/users/8",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"users",
+								"8"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Atualizar usuario(admin)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user\":{\n        \"email\":\"9999\", \n        \"cpf\":\"9999\", \n        \"username\":\"9999\", \n        \"name\":\"9999\", \n        \"surname\":\"9999\", \n        \"roletype\":1, \n        \"domain\":2\n    }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseurl}}/users/8",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"users",
+								"8"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Atualizar usuario(superuser)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user\":{\n        \"email\":\"9999\", \n        \"cpf\":\"9999\", \n        \"name\":\"9999\", \n        \"surname\":\"9999\", \n        \"roletype\":0\n    }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseurl}}/users/8",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"users",
+								"8"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Hardware",
+			"item": [
+				{
+					"name": "Entrar/cadastrar nova Chave",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseurl}}/v1.0/rfid/solicitaentrada?door_identification=13cf6ea93089f291b6093a30aae62d46&key_code=016a0edf6cc&type_access=entrada",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"v1.0",
+								"rfid",
+								"solicitaentrada"
+							],
+							"query": [
+								{
+									"key": "door_identification",
+									"value": "13cf6ea93089f291b6093a30aae62d46"
+								},
+								{
+									"key": "key_code",
+									"value": "016a0edf6cc"
+								},
+								{
+									"key": "type_access",
+									"value": "entrada"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Saida/cadastrar nova Chave",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseurl}}/v1.0/rfid/solicitasaida?door_identification=2280a481f70ad629ee888dd306e68f4f&key_code=6cecd8be46c&type_access=entrada",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"v1.0",
+								"rfid",
+								"solicitasaida"
+							],
+							"query": [
+								{
+									"key": "door_identification",
+									"value": "2280a481f70ad629ee888dd306e68f4f"
+								},
+								{
+									"key": "key_code",
+									"value": "6cecd8be46c"
+								},
+								{
+									"key": "type_access",
+									"value": "entrada"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Checar Solicitações de abertura remota",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseurl}}/v1.0/checar_solicitacoes/?door_identification=13cf6ea93089f291b6093a30aae62d46",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"v1.0",
+								"checar_solicitacoes",
+								""
+							],
+							"query": [
+								{
+									"key": "door_identification",
+									"value": "13cf6ea93089f291b6093a30aae62d46"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Chaves",
+			"item": [
+				{
+					"name": "Lista keys(Superuser, com usuarios e portas)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseurl}}/keys",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"keys"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Busca uma key(Superuser, com schedules)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseurl}}/keys/8",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"keys",
+								"8"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Atualizar uma chave com um usuario(superuser)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"key\":{\n        \"user_id\":4,\n        \"description\":\"SU1P1\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseurl}}/keys/1",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"keys",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Deleta uma key ",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseurl}}/keys/1",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"keys",
+								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Horarios",
+			"item": [
+				{
+					"name": "Criar horario(superuser)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"schedule\":{\n        \"permission_id\": 54,\n        \"entry\":\"00:00\",\n        \"exit\":\"23:59\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseurl}}/schedules",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"schedules"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Deletar horario(superuser)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseurl}}/schedules/10",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"schedules",
+								"10"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Relatorios",
+			"item": [
+				{
+					"name": "Busca um acesso por id(user, superuser)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseurl}}/accesses/1",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"accesses",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Busca todos os acessos por dominio(user, superuser)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseurl}}/accesses",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"accesses"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Busca todos os acessos por dominio filtrando por data(user, superuser)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseurl}}/accesses?datainicial=2020-10-30&datafinal=2020-10-30",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"accesses"
+							],
+							"query": [
+								{
+									"key": "datainicial",
+									"value": "2020-10-30"
+								},
+								{
+									"key": "datafinal",
+									"value": "2020-10-30"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Busca Dashinfos",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseurl}}/dashinfos",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"dashinfos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Busca o ultimo acesso feito a uma porta do dominio",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseurl}}/lastaccess",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"lastaccess"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Busca os ultimos 15 acessos feito as portas do dominio",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseurl}}/accesshistory",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"accesshistory"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Busca os ultimos 5 usuarios cadastrados",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseurl}}/lastusers",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"lastusers"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Busca quantidade de acessos dos ultimos 5 dias",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseurl}}/accesscount",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"accesscount"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"id": "082c4825-a83d-4711-b327-7e04958bbbbe",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"id": "b2bd4026-2ac2-4269-899e-19f75cd1987d",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"protocolProfileBehavior": {}
+}

@@ -1,0 +1,69 @@
+version: '3'
+services:
+  db:
+    image: "postgres"
+    restart: always
+    env_file:
+      - database.env
+    volumes:
+      - database-data:/var/lib/postgresql/data/
+    ports:
+      - "5432:5432"
+    networks:
+      - proxy-tier
+
+  adminer:
+    image: "adminer"
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+      - proxy-tier
+
+  backend:
+    container_name: backend
+    restart: always
+    build: ./backend
+    command: bundle exec rails s -p 3000 -b '0.0.0.0'
+    environment:
+      DEVISE_JWT_SECRET_KEY: 784d753e9d896a894996a8c86f4666c05a97de7774a44c269fbf931fba8c4be73a029b7def71a179532e69d82079f05c0db649b430d4d432fa1111457d3fc438
+      RAILS_ENV: development
+    depends_on:
+      - db
+    networks:
+      - proxy-tier
+    ports:
+      - "3000:3000"
+
+  frontend:
+    container_name: frontend
+    restart: always
+    build: ./frontend
+    networks:
+      - proxy-tier
+      - default
+    ports:
+      - "5000:5000"
+
+  face_recognition:
+    container_name: face_recognition
+    restart: always
+    build: ./FaceRecognition
+    networks:
+      - proxy-tier
+      - default
+    ports:
+      - "5555:5555"
+
+volumes:
+  database-data:
+  postgres:
+  certs:
+  conf.d:
+  vhost.d:
+  html:
+
+networks:
+  proxy-tier:
+      driver: bridge
+

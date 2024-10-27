@@ -1,0 +1,59 @@
+# Diretório do PyCharm/IntelliJ
+.idea/
+
+# Dependências do Node.js
+node_modules/
+
+# Ambientes virtuais Python
+venv/
+.virtualenv/
+
+# Arquivos e diretórios do Rails que não devem ser versionados
+/log/*
+!/log/.keep
+/tmp
+/public/packs
+/public/uploads
+/storage/*
+/.byebug_history
+/vendor/
+
+# Arquivos de banco de dados
+*.sqlite3
+/db/*.sqlite3
+/db/*.sqlite3-journal
+/db/schema.rb
+/db/seeds.rb
+
+# Arquivos de sistema
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Arquivos do Yarn
+yarn-debug.log*
+.yarn-integrity
+
+# Cache do bundler
+/.bundle
+
+# Arquivos gerados pelo Spring
+/tmp/pids
+/tmp/cache
+/tmp/sockets
+/tmp/storage
+
+# Arquivos de configuração específicos do sistema
+/config/master.key
+/config/credentials.yml.enc
+
+# Pastas do Active Storage (usado para armazenar arquivos)
+storage/
+
+# Arquivos temporários de specs/testes
+/spec/examples.txt
+
+# Arquivos de compilação e pré-compilação de assets
+/public/packs
+/node_modules/
