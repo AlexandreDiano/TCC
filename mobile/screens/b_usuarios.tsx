@@ -11,6 +11,7 @@ import api from "../services/api";
 import {theme} from "../theme";
 import LoadingDots from "react-native-loading-dots";
 import Toast from "react-native-toast-message";
+import {useAuth} from "../contexts/AuthContext";
 
 type TelaUsuariosNavigationProp = NavigationProp<ParamListBase>;
 
@@ -26,15 +27,12 @@ const Usuarios: React.FC<Props> = ({navigation}) => {
   const [sortOrder, setSortOrder] = useState<'nome-asc' | 'nome-desc' | 'data-asc' | 'data-desc' | null>(null);
   const [usuariosData, setUsuariosData] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [currentUser, setCurrentUser] = useState<any>();
   const [refreshing, setRefreshing] = useState(false);
+
+  const {token, user, role} = useAuth();
 
   const fetchUsuarios = async () => {
     try {
-      const token = await AsyncStorage.getItem('authToken');
-      const user = await AsyncStorage.getItem('user');
-
-      setCurrentUser(user);
       if (!token) {
         console.error('Token não encontrado');
         return;
@@ -59,7 +57,7 @@ const Usuarios: React.FC<Props> = ({navigation}) => {
       console.error('Erro ao buscar usuários:', error);
     } finally {
       setLoading(false);
-      setRefreshing(false); // Para o indicador de refresh
+      setRefreshing(false);
     }
   };
 
@@ -106,7 +104,6 @@ const Usuarios: React.FC<Props> = ({navigation}) => {
           text: 'Excluir',
           onPress: async () => {
             try {
-              const token = await AsyncStorage.getItem('authToken');
               if (!token) {
                 console.error('Token não encontrado');
                 return;
@@ -279,7 +276,7 @@ const Usuarios: React.FC<Props> = ({navigation}) => {
                   <TouchableOpacity style={styles.iconStyle} onPress={() => navigation.navigate('EditUser', { userId: item.id, edit: true })}>
                     <Ionicons name="create-outline" size={24} color={theme.colors.primary}/>
                   </TouchableOpacity>
-                  {(item.roletype !== "admin" && item.cpf === currentUser.cpf) && (
+                  {(role === "superuser" && item.roletype !== "admin" && item.cpf !== user?.cpf) && (
                     <TouchableOpacity style={styles.iconStyle} onPress={() => handleDeleteUser(item.id)}>
                       <Ionicons name="trash-outline" size={24} color={theme.colors.primary}/>
                     </TouchableOpacity>

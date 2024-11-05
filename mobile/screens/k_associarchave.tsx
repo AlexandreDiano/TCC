@@ -21,6 +21,7 @@ import api from "../services/api";
 import {capitalizeFirstLetter} from "../utils/capitalizeFirst";
 import {theme} from "../theme";
 import Toast from "react-native-toast-message";
+import {useAuth} from "../contexts/AuthContext";
 
 type AssociarChaveNavigationProp = NavigationProp<ParamListBase>;
 
@@ -42,10 +43,11 @@ const AssociarChave: React.FC<Props> = ({navigation}) => {
   const route = useRoute();
   const {id}: any = route.params
 
+  const {token} = useAuth();
+
   useEffect(() => {
     const fetchUsuarios = async () => {
       try {
-        const token = await AsyncStorage.getItem('authToken');
         if (!token) {
           console.error('Token não encontrado');
           return;
@@ -103,8 +105,6 @@ const AssociarChave: React.FC<Props> = ({navigation}) => {
     }
 
     try {
-      const token = await AsyncStorage.getItem('authToken');
-
       if (!token) {
         Toast.show({
           type: 'error',

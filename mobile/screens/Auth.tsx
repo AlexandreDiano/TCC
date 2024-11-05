@@ -1,11 +1,12 @@
 import React, {useEffect} from 'react';
 import {View, ActivityIndicator, StyleSheet} from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {useAuth} from "../contexts/AuthContext";
 
 export default function AuthLoading({navigation}: any) {
+  const {token} = useAuth();
+
   useEffect(() => {
     const checkAuthentication = async () => {
-      const token = await AsyncStorage.getItem('authToken');
       navigation.navigate(token ? 'DrawerNavigator' : 'TelaInicial');
     };
 

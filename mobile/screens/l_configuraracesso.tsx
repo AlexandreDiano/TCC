@@ -6,8 +6,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
   ScrollView,
-  Alert,
-  FlatList,
+  FlatList, RefreshControl,
 } from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -15,9 +14,9 @@ import {NavigationProp, ParamListBase, useRoute} from '@react-navigation/native'
 import {theme} from "../theme";
 import api from '../services/api';
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {formatDate} from "../utils/dateFormat";
 import {capitalizeFirstLetter} from "../utils/capitalizeFirst";
 import Toast from "react-native-toast-message";
+import {useAuth} from "../contexts/AuthContext";
 
 type ConfigurarAcessoNavigationProp = NavigationProp<ParamListBase>;
 
@@ -29,6 +28,7 @@ type DiaSemana = {
   id: number;
   nome: string;
   abreviado: string;
+  english: string;
   selecionado: boolean;
   permission_id: number | null;
 };
@@ -41,13 +41,13 @@ type IntervaloHorario = {
 };
 
 const diasDaSemanaInicial: DiaSemana[] = [
-  {id: 1, nome: 'Domingo', abreviado: 'Dom', selecionado: false, permission_id: null},
-  {id: 2, nome: 'Segunda-feira', abreviado: 'Seg', selecionado: false, permission_id: null},
-  {id: 3, nome: 'Terça-feira', abreviado: 'Ter', selecionado: false, permission_id: null},
-  {id: 4, nome: 'Quarta-feira', abreviado: 'Qua', selecionado: false, permission_id: null},
-  {id: 5, nome: 'Quinta-feira', abreviado: 'Qui', selecionado: false, permission_id: null},
-  {id: 6, nome: 'Sexta-feira', abreviado: 'Sex', selecionado: false, permission_id: null},
-  {id: 7, nome: 'Sábado', abreviado: 'Sáb', selecionado: false, permission_id: null},
+  {id: 1, nome: 'Domingo', english: 'sunday', abreviado: 'Dom', selecionado: false, permission_id: null},
+  {id: 2, nome: 'Segunda-feira', english: 'monday', abreviado: 'Seg', selecionado: false, permission_id: null},
+  {id: 3, nome: 'Terça-feira', english: 'tuesday', abreviado: 'Ter', selecionado: false, permission_id: null},
+  {id: 4, nome: 'Quarta-feira', english: 'wednesday', abreviado: 'Qua', selecionado: false, permission_id: null},
+  {id: 5, nome: 'Quinta-feira', english: 'thursday', abreviado: 'Qui', selecionado: false, permission_id: null},
+  {id: 6, nome: 'Sexta-feira', english: 'friday', abreviado: 'Sex', selecionado: false, permission_id: null},
+  {id: 7, nome: 'Sábado', english: 'saturday', abreviado: 'Sáb', selecionado: false, permission_id: null},
 ];
 
 const ConfigurarAcesso: React.FC<Props> = ({navigation}) => {
@@ -57,63 +57,62 @@ const ConfigurarAcesso: React.FC<Props> = ({navigation}) => {
   const [mostrarDePicker, setMostrarDePicker] = useState<boolean>(false);
   const [mostrarAtePicker, setMostrarAtePicker] = useState<boolean>(false);
   const [intervalos, setIntervalos] = useState<IntervaloHorario[]>([]);
-  const [diasReplicar, setDiasReplicar] = useState<DiaSemana[]>(diasDaSemanaInicial);
   const [keyData, setKeyData] = useState<any>(null);
   const route = useRoute();
+  const [refreshing, setRefreshing] = useState(false);
   const {id}: any = route.params;
+  const {token} = useAuth();
+
+  const fetchAccess = async () => {
+    try {
+      if (!token) {
+        console.error('Token não encontrado');
+        return;
+      }
+
+      const response = await api.get(`/keys/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = response.data;
+      setKeyData(data);
+
+      const newIntervals = data.permissions.flatMap((item: any) => {
+        return item.schedules.map((schedule: any) => ({
+          id: item.id,
+          dias: item.day_of_week,
+          de: schedule?.entry,
+          ate: schedule?.exit,
+          schedule: schedule
+        }));
+      });
+
+      setIntervalos(newIntervals);
+
+      const diasAtualizados = diasDaSemanaInicial.map((dia) => {
+        const permission = data.permissions.find((perm: any) =>
+          perm.day_of_week.toLowerCase() === dia.english.toLowerCase()
+        );
+        return {
+          ...dia,
+          permission_id: permission ? permission.id : null,
+        };
+      });
+
+      setDiasSelecionados(diasAtualizados);
+
+    } catch (error) {
+      console.error('Erro ao buscar chaves:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchChaves = async () => {
-      try {
-        const token = await AsyncStorage.getItem('authToken');
-        if (!token) {
-          console.error('Token não encontrado');
-          return;
-        }
-
-        const response = await api.get(`/keys/${id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        const data = response.data;
-        setKeyData(data);
-
-        console.log('data', data.permissions)
-        const newIntervals = data.permissions.flatMap((item: any) => {
-          return item.schedules.map((schedule: any) => ({
-            id: item.id,
-            dias: item.day_of_week,
-            de: schedule?.entry,
-            ate: schedule?.exit,
-          }));
-        });
-
-        console.log('newIntervals', newIntervals);
-
-        setIntervalos(newIntervals)
-
-        const diasAtualizados = diasDaSemanaInicial.map((dia) => {
-          const permission = data.permissions.find((perm: any) =>
-            perm.day_of_week.toLowerCase() === dia.nome.toLowerCase()
-          );
-          return {
-            ...dia,
-            permission_id: permission ? permission.id : null,
-          };
-        });
-
-        setDiasSelecionados(diasAtualizados);
-        setDiasReplicar(diasAtualizados);
-
-      } catch (error) {
-        console.error('Erro ao buscar chaves:', error);
-      }
-    };
-
-    fetchChaves();
+    fetchAccess();
   }, [id]);
 
   const onChangeDeTime = (event: any, selectedDate: Date | undefined) => {
@@ -134,48 +133,47 @@ const ConfigurarAcesso: React.FC<Props> = ({navigation}) => {
     }
   };
 
-  const diasDaSemana = [
-    {id: 1, nome: 'Domingo', abreviado: 'Dom', selecionado: false, english: 'sunday'},
-    {id: 2, nome: 'Segunda-feira', abreviado: 'Seg', selecionado: false, english: 'monday'},
-    {id: 3, nome: 'Terça-feira', abreviado: 'Ter', selecionado: false, english: 'tuesday'},
-    {id: 4, nome: 'Quarta-feira', abreviado: 'Qua', selecionado: false, english: 'wednesday'},
-    {id: 5, nome: 'Quinta-feira', abreviado: 'Qui', selecionado: false, english: 'thursday'},
-    {id: 6, nome: 'Sexta-feira', abreviado: 'Sex', selecionado: false, english: 'friday'},
-    {id: 7, nome: 'Sábado', abreviado: 'Sáb', selecionado: false, english: 'saturday'},
-  ];
-
-  const mapDayToPermissionId = (dayInPortuguese: any) => {
+  const mapDayToPermissionId = (dayInPortuguese: DiaSemana) => {
     if (!keyData || !keyData.permissions) {
       console.error('Dados da chave não carregados corretamente.');
       return null;
     }
 
-    keyData.permissions.forEach((perm: any) => {
-      console.log('Verificando permissão:', perm.day_of_week);
-    });
-
     const permission = keyData.permissions.find(
-      (perm: any) => {
-        return perm.day_of_week === dayOfWeekTranslation(dayInPortuguese.english);
-      }
+      (perm: any) => perm.day_of_week.toLowerCase() === dayInPortuguese.english.toLowerCase()
     );
+
+    if (!permission) {
+      console.warn(`Permission ID não encontrado para o dia ${dayInPortuguese.nome}.`);
+    }
 
     return permission ? permission.id : null;
   };
 
-  const dayOfWeekTranslation = (day: string) => {
-    const daysInEnglish = {
-      'sunday': 'domingo',
-      'monday': 'segunda',
-      'tuesday': 'terça',
-      'wednesday': 'quarta',
-      'thursday': 'quinta',
-      'friday': 'sexta',
-      'saturday': 'sabado',
+  const formatarDataHoraCompleta = (time: string) => {
+    const date = new Date(time);
+    const horas = date.getHours().toString().padStart(2, '0');
+    const minutos = date.getMinutes().toString().padStart(2, '0');
+    return `${horas}:${minutos}`;
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchAccess();
+  };
+
+  const traduzirDia = (diaEmIngles: string) => {
+    const diasEmPortugues: { [key: string]: string } = {
+      'sunday': 'Domingo',
+      'monday': 'Segunda-feira',
+      'tuesday': 'Terça-feira',
+      'wednesday': 'Quarta-feira',
+      'thursday': 'Quinta-feira',
+      'friday': 'Sexta-feira',
+      'saturday': 'Sábado',
     };
 
-    // @ts-ignore
-    return daysInEnglish[day.toLowerCase()] || null;
+    return diasEmPortugues[diaEmIngles.toLowerCase()] || diaEmIngles;
   };
 
   const adicionarIntervalo = async () => {
@@ -211,17 +209,7 @@ const ConfigurarAcesso: React.FC<Props> = ({navigation}) => {
       return;
     }
 
-    const novoIntervalo: IntervaloHorario = {
-      id: intervalos.length + 1,
-      dias: diasSelecionadosAtualizados,
-      de: deTime,
-      ate: ateTime,
-    };
-
-    setIntervalos([...intervalos, novoIntervalo]);
-
     try {
-      const token = await AsyncStorage.getItem('authToken');
       if (!token) {
         console.error('Token não encontrado');
         return;
@@ -233,8 +221,8 @@ const ConfigurarAcesso: React.FC<Props> = ({navigation}) => {
         if (permissionId) {
           const payload = {
             permission_id: permissionId,
-            start_time: deTime,
-            end_time: ateTime,
+            entry: deTime,
+            exit: ateTime,
           };
 
           const response = await api.post('/schedules', payload, {
@@ -272,142 +260,101 @@ const ConfigurarAcesso: React.FC<Props> = ({navigation}) => {
         visibilityTime: 5000
       });
       console.error(error);
+    } finally {
+      fetchAccess();
     }
 
-    // @ts-ignore
-    setDiasSelecionados(diasDaSemana);
+    setDiasSelecionados(diasDaSemanaInicial);
     setDeTime('');
     setAteTime('');
   };
 
-  const replicarHorarios = async () => {
-    const diasSelecionadosReplicar = diasReplicar.filter((dia) => dia.selecionado);
-
-    if (diasSelecionadosReplicar.length === 0) {
-      Toast.show({
-        type: 'error',
-        text1: 'Erro!',
-        text2: `Por favor, selecione pelo menos um dia para replicar os horários.`,
-        visibilityTime: 5000
-      });
-      return;
-    }
-
-    if (intervalos.length === 0) {
-      Toast.show({
-        type: 'error',
-        text1: 'Erro!',
-        text2: 'Não há intervalos para replicar.',
-        visibilityTime: 5000
-      });
-      return;
-    }
-
-    try {
-      for (let intervalo of intervalos) {
-        for (let dia of diasSelecionadosReplicar) {
-          if (dia.permission_id) {
-            const payload = {
-              permission_id: dia.permission_id,
-              start_time: intervalo.de,
-              end_time: intervalo.ate,
-            };
-
-            const token = await AsyncStorage.getItem('authToken');
-            const response = await api.post('/schedules', payload, {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-            });
-
-            if (response.status !== 201) {
-              Toast.show({
-                type: 'error',
-                text1: 'Erro!',
-                text2: 'Falha ao replicar os horários.',
-                visibilityTime: 5000
-              });
-              return;
-            }
-          }
-        }
-      }
-      Toast.show({
-        type: 'success',
-        text1: 'Sucesso!',
-        text2: 'Horários replicados com sucesso.',
-        visibilityTime: 5000
-      });
-    } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Erro!',
-        text2: 'Ocorreu um erro ao replicar os horários.',
-        visibilityTime: 5000
-      });
-      console.error(error);
-    }
-
-    setDiasReplicar(diasDaSemanaInicial);
+  const toggleSelecionarDia = (diaId: number) => {
+    const novosDias = diasSelecionados.map((dia) =>
+      dia.id === diaId ? {...dia, selecionado: !dia.selecionado} : dia
+    );
+    setDiasSelecionados(novosDias);
   };
 
-  const formatarHorario = (dataString: string) => {
-    const date = new Date(dataString);
-    const horas = date.getHours().toString().padStart(2, '0');
-    const minutos = date.getMinutes().toString().padStart(2, '0');
-    return `${horas}:${minutos}`;
-  };
-
-  const toggleSelecionarDia = (diaId: number, tipo: 'selecionar' | 'replicar') => {
-    if (tipo === 'selecionar') {
-      const novosDias = diasSelecionados.map((dia) =>
-        dia.id === diaId ? {...dia, selecionado: !dia.selecionado} : {...dia, selecionado: false}
-      );
-      setDiasSelecionados(novosDias);
-    } else {
-      const novosDias = diasReplicar.map((dia) =>
-        dia.id === diaId ? {...dia, selecionado: !dia.selecionado} : dia
-      );
-      setDiasReplicar(novosDias);
-    }
-  };
-
-  const renderDiaSemana = (dia: DiaSemana, tipo: 'selecionar' | 'replicar') => (
+  const renderDiaSemana = (dia: DiaSemana) => (
     <TouchableOpacity
       key={dia.id}
       style={[
         styles.diaButton,
         dia.selecionado && styles.diaButtonSelecionado,
-        tipo === 'replicar' && diasSelecionados.find((d) => d.id === dia.id && d.selecionado) && styles.diaButtonDesabilitado
       ]}
-      onPress={() => toggleSelecionarDia(dia.id, tipo)}
-      // @ts-ignore
-      disabled={tipo === 'replicar' && diasSelecionados.find((d) => d.id === dia.id && d.selecionado)}
+      onPress={() => toggleSelecionarDia(dia.id)}
     >
       <Text style={[
         styles.diaButtonTexto,
         dia.selecionado && styles.diaButtonTextoSelecionado,
-        tipo === 'replicar' && diasSelecionados.find((d) => d.id === dia.id && d.selecionado) && styles.diaButtonTextoDesabilitado
       ]}>
         {dia.abreviado}
       </Text>
     </TouchableOpacity>
   );
 
+  const handleDeleteAccess = async (accessId: string | number) => {
+    try {
+      if (!token) {
+        console.error('Token não encontrado');
+        return;
+      }
+
+      const response = await api.delete(`/schedules/${accessId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.status === 204) {
+        Toast.show({
+          type: 'success',
+          text1: 'Sucesso!',
+          text2: `Horário removido com sucesso.`,
+          visibilityTime: 5000
+        });
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Erro!',
+          text2: `Falha ao remover o horário.`,
+          visibilityTime: 5000
+        });
+        console.error('Erro na resposta do servidor', response.status, response.data);
+      }
+
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Erro!',
+        text2: `Ocorreu um erro ao enviar os dados.`,
+        visibilityTime: 5000
+      });
+      console.error(error);
+    } finally {
+      fetchAccess()
+    }
+  }
+
+
   const renderIntervalo = ({item}: { item: IntervaloHorario }) => (
     <View style={styles.intervaloCard}>
       <View style={styles.intervaloInfo}>
         <Text style={styles.intervaloDias}>
-          {capitalizeFirstLetter(dayOfWeekTranslation(item.dias))}
+          {/*@ts-ignore*/}
+          {capitalizeFirstLetter(traduzirDia(item.dias))}
         </Text>
         <Text style={styles.intervaloHorario}>
-          <Text style={{fontWeight: 'bold'}}>Entrada: </Text>{formatarHorario(item.de)} - <Text style={{fontWeight: 'bold'}}>Saida: </Text>{formatarHorario(item.ate)}
+          <Text style={{fontWeight: 'bold'}}>Entrada: </Text>{formatarDataHoraCompleta(item.de)} - <Text
+          style={{fontWeight: 'bold'}}>Saída: </Text>{formatarDataHoraCompleta(item.ate)}
         </Text>
       </View>
       <TouchableOpacity
         style={styles.removerIntervalo}
-        onPress={() => setIntervalos(intervalos.filter((intervalo) => intervalo.id !== item.id))}
+        // @ts-ignore
+        onPress={() => handleDeleteAccess(item.schedule.id)}
       >
         <Ionicons name="trash" size={24} color="#E53935"/>
       </TouchableOpacity>
@@ -416,72 +363,71 @@ const ConfigurarAcesso: React.FC<Props> = ({navigation}) => {
 
   return (
     <SafeAreaView style={styles.container}>
-        <Text style={styles.sectionTitle}>Dias da Semana</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.carrossel}>
-          {diasSelecionados.map((dia) => renderDiaSemana(dia, 'selecionar'))}
-        </ScrollView>
+      <Text style={styles.sectionTitle}>Dias da Semana</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.carrossel}>
+        {diasSelecionados.map((dia) => renderDiaSemana(dia))}
+      </ScrollView>
 
-        <View style={styles.horarioContainer}>
-          <TouchableOpacity style={styles.horarioInput} onPress={() => setMostrarDePicker(true)}>
-            <Text style={deTime ? styles.horarioTexto : styles.horarioPlaceholder}>
-              {deTime || 'De'}
-            </Text>
-            <Ionicons name="time" size={20} color="#777"/>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.horarioInput} onPress={() => setMostrarAtePicker(true)}>
-            <Text style={ateTime ? styles.horarioTexto : styles.horarioPlaceholder}>
-              {ateTime || 'Até'}
-            </Text>
-            <Ionicons name="time" size={20} color="#777"/>
-          </TouchableOpacity>
-        </View>
-
-        {mostrarDePicker && (
-          <DateTimePicker
-            value={new Date()}
-            mode="time"
-            is24Hour
-            display="default"
-            onChange={onChangeDeTime}
-          />
-        )}
-
-        {mostrarAtePicker && (
-          <DateTimePicker
-            value={new Date()}
-            mode="time"
-            is24Hour
-            display="default"
-            onChange={onChangeAteTime}
-          />
-        )}
-
-        <TouchableOpacity style={styles.adicionarButton} onPress={adicionarIntervalo}>
-          <Ionicons name="add-circle" size={24} color="#4CAF50"/>
-          <Text style={styles.adicionarButtonTexto}>Adicionar Intervalo</Text>
+      <View style={styles.horarioContainer}>
+        <TouchableOpacity style={styles.horarioInput} onPress={() => setMostrarDePicker(true)}>
+          <Text style={deTime ? styles.horarioTexto : styles.horarioPlaceholder}>
+            {deTime || 'De'}
+          </Text>
+          <Ionicons name="time" size={20} color={theme.colors.white}/>
         </TouchableOpacity>
 
-        <Text style={styles.sectionTitle}>Intervalos Liberados</Text>
+        <TouchableOpacity style={styles.horarioInput} onPress={() => setMostrarAtePicker(true)}>
+          <Text style={ateTime ? styles.horarioTexto : styles.horarioPlaceholder}>
+            {ateTime || 'Até'}
+          </Text>
+          <Ionicons name="time" size={20} color={theme.colors.white}/>
+        </TouchableOpacity>
+      </View>
 
-        <FlatList
-          data={intervalos}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={renderIntervalo}
-          style={styles.listaIntervalos}
-          ListEmptyComponent={<Text style={styles.listaVazia}>Nenhum intervalo adicionado.</Text>}
-          keyboardShouldPersistTaps="handled"
+      {mostrarDePicker && (
+        <DateTimePicker
+          value={new Date()}
+          mode="time"
+          is24Hour
+          display="default"
+          onChange={onChangeDeTime}
         />
+      )}
 
-        <Text style={styles.sectionTitle}>Replicar Horários</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.carrossel}>
-          {diasReplicar.map((dia) => renderDiaSemana(dia, 'replicar'))}
-        </ScrollView>
+      {mostrarAtePicker && (
+        <DateTimePicker
+          value={new Date()}
+          mode="time"
+          is24Hour
+          display="default"
+          onChange={onChangeAteTime}
+        />
+      )}
 
-        <TouchableOpacity style={styles.replicarButton} onPress={replicarHorarios}>
-          <Ionicons name="copy" size={24} color="#4CAF50"/>
-          <Text style={styles.replicarButtonTexto}>Replicar Horários</Text>
-        </TouchableOpacity>
+      <TouchableOpacity style={styles.adicionarButton} onPress={adicionarIntervalo}>
+        <Ionicons name="add-circle" size={24} color="#4CAF50"/>
+        <Text style={styles.adicionarButtonTexto}>Adicionar Intervalo</Text>
+      </TouchableOpacity>
+
+      <Text style={styles.sectionTitle}>Intervalos Liberados</Text>
+
+      <FlatList
+        data={intervalos}
+        showsVerticalScrollIndicator={false}
+        keyExtractor={(item) => item.id.toString()}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.colors.primary}
+            colors={[theme.colors.primary]}
+          />
+        }
+        renderItem={renderIntervalo}
+        style={styles.listaIntervalos}
+        ListEmptyComponent={<Text style={styles.listaVazia}>Nenhum intervalo adicionado.</Text>}
+        keyboardShouldPersistTaps="handled"
+      />
     </SafeAreaView>
   );
 };
@@ -523,13 +469,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: theme.colors.primary,
   },
-  diaButtonTextoDesabilitado: {
-    color: '#999',
-  },
-  diaButtonDesabilitado: {
-    backgroundColor: '#ccc',
-    borderColor: '#ccc',
-  },
   diaButtonTextoSelecionado: {
     color: '#fff',
     fontWeight: '600',
@@ -551,7 +490,7 @@ const styles = StyleSheet.create({
   },
   horarioPlaceholder: {
     fontSize: 16,
-    color: '#777',
+    color: theme.colors.white,
     flex: 1,
   },
   horarioTexto: {
@@ -575,7 +514,6 @@ const styles = StyleSheet.create({
   },
   listaIntervalos: {
     marginBottom: 20,
-    height: 300
   },
   intervaloCard: {
     flexDirection: 'row',
@@ -601,7 +539,7 @@ const styles = StyleSheet.create({
   },
   intervaloHorario: {
     fontSize: 14,
-    color: '#777',
+    color: theme.colors.white,
   },
   removerIntervalo: {
     padding: 5,
@@ -611,20 +549,6 @@ const styles = StyleSheet.create({
     color: '#777',
     fontSize: 16,
     marginTop: 10,
-  },
-  replicarButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.cards,
-    padding: 15,
-    borderRadius: 8,
-    marginTop: 20,
-  },
-  replicarButtonTexto: {
-    fontSize: 16,
-    color: theme.colors.primary,
-    marginLeft: 10,
-    fontWeight: '600',
   },
 });
 

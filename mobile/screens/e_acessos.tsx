@@ -9,6 +9,7 @@ import {capitalizeFirstLetter} from "../utils/capitalizeFirst";
 import {formatDate} from "../utils/dateFormat";
 import {formatCPF} from "../utils/formatCPF";
 import LoadingDots from "react-native-loading-dots";
+import {useAuth} from "../contexts/AuthContext";
 
 type TelaChavesNavigationProp = NavigationProp<ParamListBase>;
 
@@ -25,9 +26,10 @@ const Acessos: React.FC<Props> = ({navigation}) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = React.useState(false);
 
+  const {token} = useAuth();
+
   const fetchAcessos = async () => {
     try {
-      const token = await AsyncStorage.getItem('authToken');
       if (!token) {
         console.error('Token não encontrado');
         return;

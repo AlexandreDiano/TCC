@@ -17,6 +17,7 @@ venv/
 /storage/*
 /.byebug_history
 /vendor/
+/dataset
 
 # Arquivos de banco de dados
 *.sqlite3

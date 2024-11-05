@@ -43,7 +43,14 @@ def detect_face():
 
       result = process_image(image_path, username)
 
-      return jsonify(result), 200
+      print(result)
+
+      if(result == 200):
+        print('result 200')
+        return jsonify("success": "Imagem cadastrada com sucesso"), 200
+      else:
+        print('result 400')
+        return jsonify(result), 400
     else:
       return jsonify({"error": "No image or username provided"}), 400
 
@@ -52,6 +59,37 @@ def detect_face():
     return jsonify({"verified": False, "error": str(e)}), 500
   finally:
     shutil.rmtree("./dataset", ignore_errors=True)
+
+@app.route('/delete_image', methods=['POST'])
+def delete_image():
+    username = request.form.get('username')
+    image_name = request.form.get('image_name')
+
+    print(f"Username recebido: {username}")
+    print(f"Nome da imagem recebida: {image_name}")
+
+    if not username or not image_name:
+        print("Requisição recebida não contém os parâmetros esperados.")
+        print(f"Dados recebidos: {request.form}")
+        return jsonify({"error": "No username or image name provided"}), 400
+
+    try:
+        bucket = storage.bucket()
+        blob_path = f"{username}/{image_name}"
+        blob = bucket.blob(blob_path)
+
+        if blob.exists():
+            blob.delete()
+            print(f"Imagem {image_name} deletada com sucesso do usuário {username}.")
+            return jsonify({"message": f"Image {image_name} deleted successfully."}), 200
+        else:
+            print(f"Imagem {image_name} não encontrada para o usuário {username}.")
+            return jsonify({"error": "Image not found"}), 404
+
+    except Exception as e:
+        print(f"Error deleting image: {e}")
+        return jsonify({"error": str(e)}), 500
+
 
 def process_image(image_path, username):
   model.classes = [0]
@@ -67,10 +105,9 @@ def process_image(image_path, username):
   if total_faces > 0:
     print(f"{total_faces} face(s) detectada(s) na imagem.")
     upload = upload_to_firebase(image_path, username)
-    return {"faces_detected": total_faces, "message": upload}
+    return 200
   else:
-    print("Nenhuma face detectada na imagem.")
-    return {"faces_detected": 0, "message": "No faces detected"}
+    return 400
 
 def upload_to_firebase(file_path, username):
   bucket = storage.bucket()

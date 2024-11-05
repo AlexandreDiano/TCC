@@ -9,6 +9,7 @@ import {formatDate} from "../utils/dateFormat";
 import {capitalizeFirstLetter} from "../utils/capitalizeFirst";
 import {formatCPF} from "../utils/formatCPF";
 import LoadingDots from "react-native-loading-dots";
+import {useAuth} from "../contexts/AuthContext";
 
 type TelaChavesNavigationProp = NavigationProp<ParamListBase>;
 
@@ -25,9 +26,10 @@ const Chaves: React.FC<Props> = ({navigation}) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const {token} = useAuth();
+
   const fetchChaves = async () => {
     try {
-      const token = await AsyncStorage.getItem('authToken');
       if (!token) {
         console.error('Token não encontrado');
         return;
@@ -51,7 +53,7 @@ const Chaves: React.FC<Props> = ({navigation}) => {
   };
 
   useEffect(() => {
-        fetchChaves();
+    fetchChaves();
   }, []);
 
 
@@ -94,7 +96,8 @@ const Chaves: React.FC<Props> = ({navigation}) => {
     return (
       <View style={styles.loadingScreen}>
         <View style={styles.dotsWrapper}>
-          <LoadingDots colors={[theme.colors.primary, theme.colors.primary, theme.colors.primary, theme.colors.primary]}/>
+          <LoadingDots
+            colors={[theme.colors.primary, theme.colors.primary, theme.colors.primary, theme.colors.primary]}/>
         </View>
       </View>
     );
@@ -146,7 +149,8 @@ const Chaves: React.FC<Props> = ({navigation}) => {
                 <Text style={styles.keyDate}>{formatDate(item.created_at)}</Text>
               </View>
               <TouchableOpacity onPress={() => handleExpand(item.id)}>
-                <Ionicons name={expandedKey === item.id ? "chevron-up" : "chevron-down"} size={24} color={theme.colors.primary}/>
+                <Ionicons name={expandedKey === item.id ? "chevron-up" : "chevron-down"} size={24}
+                          color={theme.colors.primary}/>
               </TouchableOpacity>
             </View>
             {expandedKey === item.id && (

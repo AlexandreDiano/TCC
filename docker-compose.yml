@@ -48,7 +48,7 @@ services:
   face_recognition:
     container_name: face_recognition
     restart: always
-    build: ./FaceRecognition
+    build: FaceRecognition
     networks:
       - proxy-tier
       - default

@@ -1,12 +1,12 @@
 import React, {useState} from 'react';
-import {View, Text, TextInput, Button, StyleSheet, Alert, TouchableOpacity, Image} from 'react-native';
+import {View, Text, TextInput, StyleSheet, TouchableOpacity, Image} from 'react-native';
 import {NavigationProp, ParamListBase} from '@react-navigation/native';
-import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {useAuth} from '../contexts/AuthContext'; // Importa o contexto
 import api from "../services/api";
 import {theme} from "../theme";
 import CustomButton from "../components/Button";
 import Toast from "react-native-toast-message";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type TelaLoginNavigationProp = NavigationProp<ParamListBase>;
 
@@ -19,13 +19,15 @@ export default function Login({navigation}: Props) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const {setToken, setUser, setRole} = useAuth();
+
   const handleLogin = async () => {
     if (!username || !password) {
       Toast.show({
         type: 'error',
         text1: 'Erro!',
         text2: 'Por favor, preencha todos os campos.',
-        visibilityTime: 5000
+        visibilityTime: 5000,
       });
       return;
     }
@@ -46,47 +48,54 @@ export default function Login({navigation}: Props) {
         throw new Error('Token não encontrado nos headers da resposta da API.');
       }
 
-      const userData = response.data
+      const userData = response.data;
       const user = {
         id: userData.id,
         cpf: userData.cpf,
         email: userData.email,
         name: userData.name,
         surname: userData.surname,
-        fullname: userData.name + ' ' + userData.surname,
+        fullname: `${userData.name} ${userData.surname}`,
         roletype: userData.roletype,
         username: userData.username,
         active: userData.active,
         domain: userData.domain,
-      }
+      };
 
       const jwt = token.replace('Bearer ', '');
+
       await AsyncStorage.setItem('authToken', jwt);
       await AsyncStorage.setItem('user', JSON.stringify(user));
       await AsyncStorage.setItem('role', user.roletype);
 
-      navigation.navigate('DrawerNavigator');
+      setToken(jwt);
+      setUser(user);
+      setRole(user.roletype);
 
+      Toast.show({
+        type: 'success',
+        text1: 'Sucesso!',
+        text2: 'Login realizado com sucesso!',
+        visibilityTime: 5000,
+      });
+
+      navigation.navigate('DrawerNavigator');
     } catch (error) {
       console.error('Erro ao fazer login:', error);
       Toast.show({
-        type: 'erorr',
+        type: 'error',
         text1: 'Erro!',
         text2: 'Nome de usuário ou senha incorretos ou problema ao conectar com o servidor.',
-        visibilityTime: 5000
+        visibilityTime: 5000,
       });
     } finally {
       setLoading(false);
     }
   };
 
-
   return (
     <View style={styles.container}>
-      <Image
-        source={require('../assets/logo.png')}
-        style={styles.logo}
-      />
+      <Image source={require('../assets/logo.png')} style={styles.logo} />
       <Text style={styles.title}>Login</Text>
       <TextInput
         style={styles.input}
@@ -104,12 +113,12 @@ export default function Login({navigation}: Props) {
         secureTextEntry
       />
       <View style={styles.buttonContainer}>
-        <CustomButton title={loading ? 'Carregando...' : 'Entrar'} onPress={handleLogin} disabled={loading}/>
+        <CustomButton title={loading ? 'Carregando...' : 'Entrar'} onPress={handleLogin} disabled={loading} />
       </View>
 
       <Text style={styles.promptText}>
         Não possui uma conta?{' '}
-        <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+        <TouchableOpacity onPress={() => navigation.navigate('Register', { userId: undefined, edit: false })}>
           <Text style={styles.loginText}>Cadastre-se</Text>
         </TouchableOpacity>
       </Text>

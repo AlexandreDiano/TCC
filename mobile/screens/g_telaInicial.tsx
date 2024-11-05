@@ -23,7 +23,7 @@ export default function TelaInicial({navigation}: Props) {
         <CustomButton title="Login" onPress={() => navigation.navigate('Login')}/>
       </View>
       <View style={styles.buttonContainer}>
-        <CustomButton title="Registrar" onPress={() => navigation.navigate('Register')}/>
+        <CustomButton title="Registrar" onPress={() => navigation.navigate('Register', { userId: undefined, edit: false })}/>
       </View>
     </View>
   );

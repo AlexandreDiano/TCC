@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from 'react';
-import {View, Text, TextInput, Button, Alert, TouchableOpacity, StyleSheet} from 'react-native';
+import {View, Text, TextInput, StyleSheet, TextStyle} from 'react-native';
 import {NavigationProp, ParamListBase} from '@react-navigation/native';
 import {Picker} from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -7,6 +7,7 @@ import api from '../services/api';
 import CustomButton from "../components/Button";
 import {theme} from "../theme";
 import Toast from "react-native-toast-message";
+import {useAuth} from "../contexts/AuthContext";
 
 type TelaNovoUsuarioNavigationProp = NavigationProp<ParamListBase>;
 
@@ -24,15 +25,13 @@ export default function Login({navigation}: Props) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [roletype, setRoletype] = useState(2);
   const [passwordsMatch, setPasswordsMatch] = useState(true);
-  const [domain, setDomain] = useState(null);
+  const [domain, setDomain] = useState<any>(null);
+  const {token, user, role} = useAuth();
 
   useEffect(() => {
     const fetchDomain = async () => {
-      const storedUser = await AsyncStorage.getItem('user');
-
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        setDomain(parsedUser.domain);
+      if (user && role) {
+        setDomain(user.domain);
       } else {
         console.error('Usuário não encontrado no AsyncStorage');
       }
@@ -42,11 +41,7 @@ export default function Login({navigation}: Props) {
   }, []);
 
   const handlePasswordConfirmation = () => {
-    if (password !== confirmPassword) {
-      setPasswordsMatch(false);
-    } else {
-      setPasswordsMatch(true);
-    }
+    setPasswordsMatch(password === confirmPassword);
   };
 
   const handleSignUp = async () => {
@@ -70,7 +65,6 @@ export default function Login({navigation}: Props) {
       return;
     }
 
-
     try {
       const payload = {
         name,
@@ -82,7 +76,6 @@ export default function Login({navigation}: Props) {
         roletype,
       };
 
-      const token = await AsyncStorage.getItem('authToken');
       if (!token) {
         console.error('Token não encontrado');
         return;
@@ -180,15 +173,22 @@ export default function Login({navigation}: Props) {
         <Text style={styles.errorText}>As senhas não coincidem.</Text>
       )}
       <View style={styles.pickerContainer}>
-        <Text style={{color: theme.colors.white}}>Cargo:</Text>
-        <Picker
-          selectedValue={roletype}
-          style={styles.picker}
-          onValueChange={(itemValue: React.SetStateAction<string>, itemIndex: any) => setRoletype(itemValue)}
-        >
-          <Picker.Item style={{color: theme.colors.white}} label="Usuário" value={2}/>
-          <Picker.Item style={{color: theme.colors.white}} label="SuperAdmin" value={1}/>
-        </Picker>
+        <Text style={styles.pickerLabel}>Cargo:</Text>
+        <View style={styles.pickerWrapper}>
+          <Picker
+            selectedValue={roletype}
+            style={styles.picker}
+            onValueChange={(itemValue: React.SetStateAction<number>, itemIndex: number) => setRoletype(itemValue)}
+            dropdownIconColor={theme.colors.primary}
+          >
+
+            {role === 'admin' && (
+              <Picker.Item label="Admin" value={0} />
+            )}
+            <Picker.Item label="Usuário" value={2} />
+            <Picker.Item label="Super Usuário" value={1} />
+          </Picker>
+        </View>
       </View>
       <View style={styles.buttonContainer}>
         <CustomButton title="Cadastrar" onPress={handleSignUp}/>
@@ -205,11 +205,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: theme.colors.background,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 24,
-  },
   input: {
     width: '80%',
     padding: 10,
@@ -224,28 +219,30 @@ const styles = StyleSheet.create({
     marginTop: 16,
     width: '80%',
   },
-  promptText: {
-    marginTop: 16,
-  },
-  loginText: {
-    marginTop: 16,
-    color: '#007bff',
-  },
   errorText: {
     color: 'red',
     marginTop: 8,
     marginBottom: 8,
   },
   pickerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-    color: theme.colors.textWhite,
+    width: '80%',
+    marginTop: 16,
+  },
+  pickerLabel: {
+    color: theme.colors.white,
+    marginBottom: 8,
+    fontSize: 16,
+  },
+  pickerWrapper: {
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+    borderRadius: 5,
+    overflow: 'hidden',
+    backgroundColor: theme.colors.cards,
   },
   picker: {
-    color: theme.colors.buttonText,
     height: 50,
-    width: 150,
-    marginLeft: 8,
+    color: theme.colors.white,
   },
 });
+

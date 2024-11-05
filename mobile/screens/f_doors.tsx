@@ -4,20 +4,18 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
   FlatList,
-  Button,
-  Alert,
   RefreshControl
 } from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
-import {NavigationProp, ParamListBase} from '@react-navigation/native';
+import {NavigationProp, ParamListBase, useIsFocused} from '@react-navigation/native';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../services/api";
 import {theme} from "../theme";
 import axios from "axios";
 import LoadingDots from "react-native-loading-dots";
 import Toast from "react-native-toast-message";
+import {useAuth} from "../contexts/AuthContext";
 
 type TelaPortasNavigationProp = NavigationProp<ParamListBase>;
 
@@ -29,61 +27,11 @@ const Portas: React.FC<Props> = ({navigation}) => {
   const [portasData, setPortasData] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState(false);
-
-  const solicitarEntrada = async (code: string) => {
-    try {
-      const token = await AsyncStorage.getItem('authToken');
-      if (!token) {
-        console.error('Token não encontrado');
-        return;
-      }
-
-      // @ts-ignore
-      const response = await api.get('/v1.0/rfid/solicitaentrada', code, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      Toast.show({
-        type: 'success',
-        text1: 'Sucesso!',
-        text2: 'Solicitação de abertura feita!',
-        visibilityTime: 5000
-      });
-
-      if (response.status === 200) {
-        const openResponse = await axios.post('http://192.168.100.229:5555/open', {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (openResponse.status !== 200) {
-          Toast.show({
-            type: 'error',
-            text1: 'Erro!',
-            text2: 'Falha ao abrir a porta.',
-            visibilityTime: 5000
-          });
-        }
-      }
-    } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Erro!',
-        text2: 'Falha ao solicitar entrada. Tente novamente!',
-        visibilityTime: 5000
-      });
-      console.error('Erro ao solicitar entrada:', error);
-    }
-  };
-
+  const isFocused = useIsFocused();
+  const {token, role} = useAuth();
 
   const fetchPortas = async () => {
     try {
-      const token = await AsyncStorage.getItem('authToken');
       if (!token) {
         console.error('Token não encontrado');
         return;
@@ -111,29 +59,104 @@ const Portas: React.FC<Props> = ({navigation}) => {
     fetchPortas();
   }, []);
 
-  const handleAcao = (acao: string, portaId: number) => {
-    Toast.show({
-      type: 'success',
-      text1: 'Sucesso!',
-      text2: `Ação: ${acao} Ação escolhida para a porta: ${portaId}`,
-      visibilityTime: 5000
-    });
-  };
-
-  useEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <TouchableOpacity onPress={() => navigation.navigate('AddDoor')} style={{marginRight: 15}}>
-          <Ionicons name="add" size={24} color={theme.colors.primary}/>
-        </TouchableOpacity>
-      ),
-    });
-  }, [navigation]);
-
   const onRefresh = () => {
     setRefreshing(true);
     fetchPortas();
   };
+
+  const handleEditDoor = (porta: any) => {
+    navigation.navigate('AddDoor', {porta});
+  };
+
+  const solicitarEntrada = async (code: string) => {
+    try {
+      if (!token) {
+        console.error('Token não encontrado');
+        return;
+      }
+
+      // const response = await api.post(`/doors/${code}/openremote`, {
+      //   headers: {
+      //     'Authorization': `Bearer ${token}`,
+      //     'Content-Type': 'application/json',
+      //   },
+      // });
+
+      Toast.show({
+        type: 'success',
+        text1: 'Sucesso!',
+        text2: 'Solicitação de abertura feita!',
+        visibilityTime: 5000
+      });
+
+      // if (response.status === 200) {
+        const openResponse = await axios.post('http://192.168.100.229:5555/open', {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (openResponse.status !== 200) {
+          Toast.show({
+            type: 'error',
+            text1: 'Erro!',
+            text2: 'Falha ao abrir a porta.',
+            visibilityTime: 5000
+          });
+        }
+      // }
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Erro!',
+        text2: 'Falha ao solicitar entrada. Tente novamente!',
+        visibilityTime: 5000
+      });
+      console.error('Erro ao solicitar entrada:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (isFocused) {
+      fetchPortas();
+    }
+  }, [isFocused]);
+
+  const handleDeleteDoors = async (doorId: number | string) => {
+    try {
+      if (!token) {
+        console.error('Token não encontrado');
+        return;
+      }
+
+      const response = await api.delete(`/doors/${doorId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.status === 204) {
+        Toast.show({
+          type: 'success',
+          text1: 'Sucesso!',
+          text2: "Porta removida com sucesso!",
+          visibilityTime: 5000
+        });
+      }
+
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Erro!',
+        text2: "Falha ao remover porta.",
+        visibilityTime: 5000
+      });
+      console.error('Erro ao remover porta:', error);
+    } finally {
+      fetchPortas()
+    }
+  }
 
   if (loading) {
     return (
@@ -165,15 +188,21 @@ const Portas: React.FC<Props> = ({navigation}) => {
             <Text style={styles.tableCell}>{item.description}</Text>
             <Text style={styles.tableCell}>{item.identification}</Text>
             <View style={styles.actionButtons}>
-              <TouchableOpacity onPress={() => solicitarEntrada(item.identification)} style={styles.actionButton}>
-                <Ionicons name="lock-open-outline" size={20} color={theme.colors.primary}/>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleAcao('Editar', item.id)} style={styles.actionButton}>
-                <Ionicons name="create-outline" size={20} color={theme.colors.primary}/>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleAcao('Desvincular', item.id)} style={styles.actionButton}>
-                <Ionicons name="trash-outline" size={20} color={theme.colors.primary}/>
-              </TouchableOpacity>
+              {role === 'superuser' && (
+                <TouchableOpacity onPress={() => solicitarEntrada(item.id)} style={styles.actionButton}>
+                  <Ionicons name="lock-open-outline" size={20} color={theme.colors.primary}/>
+                </TouchableOpacity>
+              )}
+              {role === 'admin' && (
+                <TouchableOpacity onPress={() => handleEditDoor(item)} style={styles.actionButton}>
+                  <Ionicons name="create-outline" size={20} color={theme.colors.primary}/>
+                </TouchableOpacity>
+              )}
+              {(role === 'admin' || role === 'superuser') && (
+                <TouchableOpacity onPress={() => handleDeleteDoors(item.id)} style={styles.actionButton}>
+                  <Ionicons name="trash-outline" size={20} color={theme.colors.primary}/>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         )}

@@ -11,6 +11,7 @@ import {getGreeting} from '../utils/greeting';
 import {theme} from "../theme";
 import LoadingDots from "react-native-loading-dots";
 import Toast from "react-native-toast-message";
+import {useAuth} from "../contexts/AuthContext";
 
 type TelaDashboardNavigationProp = NavigationProp<ParamListBase>;
 
@@ -24,19 +25,16 @@ const Dashboard: React.FC<Props> = ({navigation}) => {
   const [accessesHistory, setAcessesHistory] = useState<any>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [userName, setUserName] = useState('Usuário');
-  const [currentRole, setCurrentRole] = useState<any>();
 
   const [showCredenciados, setShowCredenciados] = useState(false);
   const [showAcessos, setShowAcessos] = useState(false);
 
+  const {token, role, user} = useAuth();
+
   useEffect(() => {
     const loadUserName = async () => {
-      const storedUser = await AsyncStorage.getItem('user');
-      const storedRole = await AsyncStorage.getItem('role');
-      if (storedUser) {
-        const user = JSON.parse(storedUser);
+      if (user) {
         setUserName(user.name);
-        setCurrentRole(storedRole);
       }
     };
 
@@ -56,7 +54,6 @@ const Dashboard: React.FC<Props> = ({navigation}) => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const token = await AsyncStorage.getItem('authToken');
         if (!token) {
           console.error('Token não encontrado');
           return;
@@ -67,7 +64,7 @@ const Dashboard: React.FC<Props> = ({navigation}) => {
           'Content-Type': 'application/json',
         };
 
-        if(currentRole === 'user'){
+        if(role === 'user'){
           const [dashInfosRes] = await Promise.all([
             api.get('/dashinfos', {headers}),
           ]);
@@ -94,7 +91,7 @@ const Dashboard: React.FC<Props> = ({navigation}) => {
     };
 
     fetchDashboardData();
-  }, [currentRole]);
+  }, [role]);
 
   if (loading) {
     return (
@@ -142,7 +139,7 @@ const Dashboard: React.FC<Props> = ({navigation}) => {
             <Text style={styles.shortcutTitle}>| Atalhos</Text>
           </View>
 
-          {currentRole === 'user' ? (
+          {role === 'user' ? (
             <View style={styles.shortcutItemsContainer}>
               <TouchableOpacity style={styles.shortcut} onPress={() => navigation.navigate('Accesses')}>
                 <Ionicons name="swap-horizontal-outline" size={24} color={theme.colors.primary}/>
@@ -153,7 +150,7 @@ const Dashboard: React.FC<Props> = ({navigation}) => {
                 <Text style={styles.shortcutLabel}>Imagens</Text>
               </TouchableOpacity>
             </View>
-          ) : currentRole === 'admin' ? (
+          ) : role === 'admin' ? (
             <View style={styles.shortcutItemsContainer}>
               <TouchableOpacity style={styles.shortcut} onPress={() => navigation.navigate('Users')}>
                 <Ionicons name="people-outline" size={24} color={theme.colors.primary}/>
@@ -200,7 +197,7 @@ const Dashboard: React.FC<Props> = ({navigation}) => {
             <Text style={styles.historyTitle}>| Histórico</Text>
           </View>
 
-          {currentRole === 'superuser' && (
+          {role === 'superuser' && (
             <>
               <TouchableOpacity onPress={() => setShowCredenciados(!showCredenciados)} style={styles.historyDrop}>
                 <Text style={styles.historyLabel}>Credenciados (últimos 5)</Text>

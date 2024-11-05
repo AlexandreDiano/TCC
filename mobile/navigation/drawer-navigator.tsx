@@ -2,7 +2,7 @@ import React, {useState, useEffect} from 'react';
 import {createDrawerNavigator} from '@react-navigation/drawer';
 import {StackScreenProps} from '@react-navigation/stack';
 import {Ionicons, MaterialIcons, FontAwesome6} from '@expo/vector-icons';
-import {TouchableOpacity, Alert} from 'react-native';
+import {TouchableOpacity} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {RootStackParamList} from '.';
@@ -15,52 +15,38 @@ import Doors from '../screens/f_doors';
 import TelaInicial from 'screens/g_telaInicial';
 import {theme} from "../theme";
 import Toast from "react-native-toast-message";
+import {useAuth} from "../contexts/AuthContext";
 
 type Props = StackScreenProps<RootStackParamList, 'DrawerNavigator'>;
 
 const Drawer = createDrawerNavigator();
 
 export default function DrawerNavigator({navigation}: Props) {
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchUserRole = async () => {
-      try {
-        const role = await AsyncStorage.getItem('role');
-        console.log('role', role);
-        setUserRole(role);
-      } catch (error) {
-        console.error('Erro ao buscar tipo de usuário:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserRole();
-  }, []);
+  const {role, setToken, setUser, setRole} = useAuth();
 
   async function handleLogout() {
     try {
       await AsyncStorage.removeItem('authToken');
       await AsyncStorage.removeItem('user');
       await AsyncStorage.removeItem('role');
+
+      setToken(null);
+      setUser(null);
+      setRole(null);
+
       navigation.reset({
         index: 0,
-        routes: [{name: 'Login'}],
+        routes: [{name: 'TelaInicial'}],
       });
+
     } catch (error) {
       Toast.show({
         type: 'error',
         text1: 'Erro!',
         text2: 'Não foi possível fazer logout.',
-        visibilityTime: 5000
+        visibilityTime: 5000,
       });
     }
-  }
-
-  if (loading) {
-    return null;
   }
 
   return (
@@ -88,7 +74,7 @@ export default function DrawerNavigator({navigation}: Props) {
         }}
       />
 
-      {(userRole === 'superuser' || userRole === 'admin') && (
+      {(role === 'superuser' || role === 'admin') && (
         <Drawer.Screen
           name="Users"
           component={Usuarios}
@@ -109,7 +95,7 @@ export default function DrawerNavigator({navigation}: Props) {
         />
       )}
 
-      {(userRole === 'superuser') && (
+      {(role === 'superuser') && (
         <Drawer.Screen
           name="Keys"
           component={Chaves}
@@ -122,7 +108,7 @@ export default function DrawerNavigator({navigation}: Props) {
         />
       )}
 
-      {(userRole === 'superuser' || userRole === 'user') && (
+      {(role === 'superuser' || role === 'user') && (
         <Drawer.Screen
           name="Accesses"
           component={Acessos}
@@ -135,7 +121,7 @@ export default function DrawerNavigator({navigation}: Props) {
         />
       )}
 
-      {(userRole === 'superuser' || userRole === 'admin') && (
+      {(role === 'superuser' || role === 'admin') && (
         <Drawer.Screen
           name="Doors"
           component={Doors}
@@ -148,18 +134,16 @@ export default function DrawerNavigator({navigation}: Props) {
         />
       )}
 
-      {userRole && (
-        <Drawer.Screen
-          name="Images"
-          component={Imagens}
-          options={{
-            title: 'Imagens',
-            drawerIcon: ({size, color}) => (
-              <Ionicons name="image-outline" size={size} color={theme.colors.primary}/>
-            ),
-          }}
-        />
-      )}
+      <Drawer.Screen
+        name="Images"
+        component={Imagens}
+        options={{
+          title: 'Imagens',
+          drawerIcon: ({size, color}) => (
+            <Ionicons name="image-outline" size={size} color={theme.colors.primary}/>
+          ),
+        }}
+      />
 
       <Drawer.Screen
         name="Logout"
