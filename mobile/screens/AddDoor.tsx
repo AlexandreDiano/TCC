@@ -1,7 +1,6 @@
 import React, {useState, useEffect} from 'react';
-import {View, TextInput, StyleSheet} from 'react-native';
+import {View, TextInput, StyleSheet, Text} from 'react-native';
 import api from "../services/api";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {theme} from "../theme";
 import CustomButton from "../components/Button";
 import Toast from "react-native-toast-message";
@@ -111,6 +110,7 @@ const AdicionarPorta = ({navigation, route}: any) => {
         onChangeText={setSerial}
         maxLength={32}
       />
+
       {role === 'admin' && (
         <TextInput
           style={styles.input}

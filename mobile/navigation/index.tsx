@@ -25,6 +25,13 @@ export type RootStackParamList = {
   TelaInicial: undefined;
   Login: undefined;
   Cadastro: undefined;
+  NewUser: undefined;
+  AddDoor: undefined;
+  AuthLoading: undefined;
+  Association: undefined;
+  EditUser: undefined;
+  AccessConfig: undefined;
+  Register: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -60,8 +67,8 @@ const toastConfig = {
 
 export default function RootStack() {
   return (
-    // @ts-ignore
     <NavigationContainer theme={{
+      dark: false,
       colors: {
         background: theme.colors.background,
         primary: theme.colors.primary,

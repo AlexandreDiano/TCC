@@ -179,6 +179,7 @@ export default function Login({ navigation }: Props) {
         cpf,
         email,
         username,
+        password
       };
 
       let response;

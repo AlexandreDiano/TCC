@@ -1,7 +1,7 @@
 import React, {useState, useEffect} from 'react';
 import {NavigationProp, ParamListBase} from '@react-navigation/native';
 import {Ionicons, FontAwesome6} from '@expo/vector-icons';
-import {View, Text, StyleSheet, TouchableOpacity, ScrollView, Button} from 'react-native';
+import {View, Text, StyleSheet, TouchableOpacity, ScrollView, Button, RefreshControl} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
 import {capitalizeFirstLetter} from '../utils/capitalizeFirst';
@@ -25,7 +25,7 @@ const Dashboard: React.FC<Props> = ({navigation}) => {
   const [accessesHistory, setAcessesHistory] = useState<any>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [userName, setUserName] = useState('Usuário');
-
+  const [refreshing, setRefreshing] = useState(false);
   const [showCredenciados, setShowCredenciados] = useState(false);
   const [showAcessos, setShowAcessos] = useState(false);
 
@@ -51,47 +51,53 @@ const Dashboard: React.FC<Props> = ({navigation}) => {
     });
   }, [navigation, userName]);
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        if (!token) {
-          console.error('Token não encontrado');
-          return;
-        }
-
-        const headers = {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        };
-
-        if(role === 'user'){
-          const [dashInfosRes] = await Promise.all([
-            api.get('/dashinfos', {headers}),
-          ]);
-
-          setDashInfos(dashInfosRes.data || 0);
-        }else{
-          const [dashInfosRes, accessHistoryRes, lastUsersRes] = await Promise.all([
-            api.get('/dashinfos', {headers}),
-            api.get('/accesshistory', {headers}),
-            api.get('/lastusers', {headers}),
-          ]);
-
-          setDashInfos(dashInfosRes.data || 0);
-          setAcessesHistory(accessHistoryRes.data || []);
-          setLastUsers(lastUsersRes.data || []);
-        }
-
-
-      } catch (error) {
-        console.error('Erro ao buscar dados do dashboard:', error);
-      } finally {
-        setLoading(false);
+  const fetchDashboardData = async () => {
+    try {
+      if (!token) {
+        console.error('Token não encontrado');
+        return;
       }
-    };
 
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      };
+
+      if(role === 'user'){
+        const [dashInfosRes] = await Promise.all([
+          api.get('/dashinfos', {headers}),
+        ]);
+
+        setDashInfos(dashInfosRes.data || 0);
+      }else{
+        const [dashInfosRes, accessHistoryRes, lastUsersRes] = await Promise.all([
+          api.get('/dashinfos', {headers}),
+          api.get('/accesshistory', {headers}),
+          api.get('/lastusers', {headers}),
+        ]);
+
+        setDashInfos(dashInfosRes.data || 0);
+        setAcessesHistory(accessHistoryRes.data || []);
+        setLastUsers(lastUsersRes.data || []);
+      }
+
+
+    } catch (error) {
+      console.error('Erro ao buscar dados do dashboard:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
     fetchDashboardData();
   }, [role]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchDashboardData();
+  };
 
   if (loading) {
     return (
@@ -104,7 +110,9 @@ const Dashboard: React.FC<Props> = ({navigation}) => {
   }
 
   return (
-    <ScrollView style={styles.scrollViewContainer}>
+    <ScrollView style={styles.scrollViewContainer} refreshControl={
+      <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
+    }>
       <View style={styles.dashboardContainer}>
         <View style={styles.dashboardTitleContainer}>
           <Ionicons name="grid-outline" size={24} color={theme.colors.primary} style={styles.icon}/>

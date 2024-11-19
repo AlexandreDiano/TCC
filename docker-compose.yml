@@ -54,6 +54,8 @@ services:
       - default
     ports:
       - "5555:5555"
+    volumes:
+      - ./FaceRecognition:/app
 
 volumes:
   database-data:

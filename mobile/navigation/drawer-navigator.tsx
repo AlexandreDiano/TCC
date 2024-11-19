@@ -28,6 +28,7 @@ export default function DrawerNavigator({navigation}: Props) {
     try {
       await AsyncStorage.removeItem('authToken');
       await AsyncStorage.removeItem('user');
+      await AsyncStorage.removeItem('userPhoto');
       await AsyncStorage.removeItem('role');
 
       setToken(null);
@@ -129,6 +130,14 @@ export default function DrawerNavigator({navigation}: Props) {
             title: 'Portas',
             drawerIcon: ({size, color}) => (
               <FontAwesome6 name="door-open" size={size} color={theme.colors.primary}/>
+            ),
+            headerRight: () => (
+              <TouchableOpacity
+                onPress={() => navigation.navigate('AddDoor')}
+                style={{marginRight: 15}}
+              >
+                <Ionicons name="add" size={24} color={theme.colors.primary}/>
+              </TouchableOpacity>
             ),
           }}
         />

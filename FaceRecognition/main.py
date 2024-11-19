@@ -2,10 +2,12 @@ import os
 import shutil
 import cv2
 import time
+import firebase_admin
+from google.cloud import storage
+
 from flask import Flask, request, jsonify
 from ultralytics import YOLO
 from deepface import DeepFace
-import firebase_admin
 from firebase_admin import credentials, storage
 from flask_cors import CORS
 
@@ -47,7 +49,7 @@ def detect_face():
 
       if(result == 200):
         print('result 200')
-        return jsonify("success": "Imagem cadastrada com sucesso"), 200
+        return jsonify({"success": "Imagem cadastrada com sucesso"}), 200
       else:
         print('result 400')
         return jsonify(result), 400
@@ -78,6 +80,7 @@ def delete_image():
         blob_path = f"{username}/{image_name}"
         blob = bucket.blob(blob_path)
 
+        print(f'blob {blob}')
         if blob.exists():
             blob.delete()
             print(f"Imagem {image_name} deletada com sucesso do usuário {username}.")
@@ -173,21 +176,24 @@ def compare_with_processed_images(image_path, username):
     shutil.rmtree('./temp_dir', ignore_errors=True)
 
 def sync_images_from_storage():
-  bucket = storage.bucket()
-  blobs = bucket.list_blobs()
+    bucket = storage.bucket()
+    blobs = bucket.list_blobs()
 
-  local_dataset_dir = "./dataset"
-  if not os.path.exists(local_dataset_dir):
-    os.makedirs(local_dataset_dir)
+    local_dataset_dir = "./dataset"
+    if not os.path.exists(local_dataset_dir):
+        os.makedirs(local_dataset_dir)
 
-  for blob in blobs:
-    if blob.content_type and blob.content_type.startswith("image/"):
-      local_file_path = os.path.join(local_dataset_dir, os.path.basename(blob.name))
-      if not os.path.exists(local_file_path):
-        print(f"Baixando imagem: {blob.name}")
-        blob.download_to_filename(local_file_path)
-      else:
-        print(f"Imagem {blob.name} já existe. Ignorando download.")
+    for blob in blobs:
+        if blob.content_type and blob.content_type.startswith("image/"):
+            local_file_path = os.path.join(local_dataset_dir, blob.name)
+
+            os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
+
+            if not os.path.exists(local_file_path):
+                print(f"Baixando imagem: {blob.name} para {local_file_path}")
+                blob.download_to_filename(local_file_path)
+            else:
+                print(f"Imagem {blob.name} já existe no local. Ignorando download.")
 
 def start_sync_process(interval=60):
   while True:

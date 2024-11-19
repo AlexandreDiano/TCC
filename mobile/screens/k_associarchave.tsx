@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary,
   },
   botaoConfirmarTexto: {
-    color: theme.colors.textWhite,
+    color: theme.colors.white,
     fontSize: 18,
     fontWeight: '600',
   },

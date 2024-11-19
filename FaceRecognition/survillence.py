@@ -129,7 +129,8 @@ def process_face(frame):
                     face_image_rgb = face_image_rgb.astype('uint8')
 
             face_image_bgr = cv2.cvtColor(face_image_rgb, cv2.COLOR_RGB2BGR)
-
+            face_image_bgr = cv2.resize(face_image_bgr, (160, 160))
+            
             embedding = DeepFace.represent(
                 img_path=face_image_bgr,
                 model_name='ArcFace',

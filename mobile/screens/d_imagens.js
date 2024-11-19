@@ -1,6 +1,6 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import * as MediaLibrary from 'expo-media-library';
-import {View, Text, StyleSheet, TouchableOpacity, Image, Alert} from 'react-native';
+import {Alert, Image, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {Camera, CameraView} from 'expo-camera';
 import * as ImageManipulator from 'expo-image-manipulator';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -8,6 +8,9 @@ import {theme} from "../theme";
 import api from "../services/api";
 import Toast from "react-native-toast-message";
 import {useAuth} from "../contexts/AuthContext";
+import {BASE_URL, FLASK_PORT} from '@env';
+import {getDownloadURL, ref} from 'firebase/storage';
+import {storage} from '../utils/firebase';
 
 const Images = () => {
   const [hasPermission, setHasPermission] = useState(false);
@@ -16,13 +19,86 @@ const Images = () => {
   const cameraRef = useRef(null);
   const {token, user} = useAuth();
 
+  const downloadImage = async () => {
+    try {
+      const responseKey = await api.get('/keys', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const keysData = responseKey.data;
+      const userKey = keysData.find((key) => key.user_id === user.id);
+
+      if (!userKey) {
+        Toast.show({
+          type: 'error',
+          text1: 'Erro!',
+          text2: 'KeyCode não encontrado para o usuário.',
+          visibilityTime: 5000
+        });
+        return;
+      }
+
+      const keyCode = userKey.code
+
+      const fileName = `${user.name} ${user.surname}_${keyCode}.jpg`;
+      const filePath = `${user.name} ${user.surname}/${fileName}`;
+
+      const storageRef = ref(storage, filePath);
+
+      const url = await getDownloadURL(storageRef)
+
+      await AsyncStorage.setItem('userPhoto', url);
+      setImage(url)
+
+      return url
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Erro!',
+        text2: 'Não foi possivel baixar a imagem salva!',
+        visibilityTime: 5000
+      });
+
+      console.error("Erro ao baixar imagem:", error.message);
+    }
+  };
+
+  useEffect(() => {
+    const fetchImage = async () => {
+      const url = await downloadImage();
+
+      if (url) {
+        await AsyncStorage.setItem('userPhoto', url);
+        setImage(url)
+
+        Toast.show({
+          type: 'success',
+          text1: 'Sucesso',
+          text2: 'Imagem resgatada com sucesso.',
+          visibilityTime: 5000
+        });
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Erro!',
+          text2: 'Não foi encontrado nenhuma imagem salva!',
+          visibilityTime: 5000
+        });
+      }
+    };
+
+    fetchImage();
+  }, []);
+
   useEffect(() => {
     (async () => {
       const storedImage = await AsyncStorage.getItem('userPhoto');
       if (storedImage) {
         setImage(storedImage);
       } else {
-        setShowCamera(true);
+        downloadImage()
       }
 
       const {status} = await Camera.requestCameraPermissionsAsync();
@@ -51,13 +127,12 @@ const Images = () => {
       }
 
       await AsyncStorage.removeItem('userPhoto');
-        setImage(null);
-        setShowCamera(true);
+      setImage(null);
+      setShowCamera(true);
 
       const responseKey = await api.get('/keys', {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
         },
       });
 
@@ -74,21 +149,19 @@ const Images = () => {
         return;
       }
 
-      const keyCode = userKey.code;
+      const keyCode = userKey.code
 
       const data = new FormData();
       data.append('username', `${user.name} ${user.surname}`);
-      data.append('image_name', `${user.name}_${user.surname}_${keyCode}.jpg`);
+      data.append('image_name', `${user.name} ${user.surname}_${keyCode}.jpg`);
 
-      const response = await fetch('http://192.168.100.229:5555/delete_image', {
+      const response = await fetch(`${BASE_URL}:${FLASK_PORT}/delete_image`, {
         method: 'POST',
         headers: {
           'Content-Type': 'multipart/form-data',
         },
         body: data,
       });
-
-      console.log('data', data)
 
       if (response.status === 200) {
         Toast.show({
@@ -97,9 +170,6 @@ const Images = () => {
           text2: 'Foto removida com sucesso.',
           visibilityTime: 5000,
         });
-        await AsyncStorage.removeItem('userPhoto');
-        setImage(null);
-        setShowCamera(true);
       } else {
         Toast.show({
           type: 'error',
@@ -109,7 +179,6 @@ const Images = () => {
         });
       }
     } catch (error) {
-      console.error('Erro ao remover a foto:', error);
       Toast.show({
         type: 'error',
         text1: 'Erro!',
@@ -130,7 +199,6 @@ const Images = () => {
         const responseKey = await api.get('/keys', {
           headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
           },
         });
 
@@ -147,7 +215,7 @@ const Images = () => {
           return;
         }
 
-        const keyCode = userKey.code;
+        const keyCode = userKey.code
 
         const manipulatedImage = await ImageManipulator.manipulateAsync(
           image,
@@ -170,15 +238,13 @@ const Images = () => {
           return;
         }
 
-        const response = await fetch('http://192.168.100.229:5555/detect_face', {
+        const response = await fetch(`${BASE_URL}:${FLASK_PORT}/detect_face`, {
           method: 'POST',
           headers: {
             'Content-Type': 'multipart/form-data',
           },
           body: data,
         });
-
-        console.log('detect', data)
 
         const responseJson = await response.json();
 
@@ -191,6 +257,7 @@ const Images = () => {
             visibilityTime: 5000
           });
         } else {
+          console.error(responseJson.error)
           Toast.show({
             type: 'error',
             text1: 'Erro!',

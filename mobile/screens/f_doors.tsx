@@ -9,13 +9,13 @@ import {
 } from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import {NavigationProp, ParamListBase, useIsFocused} from '@react-navigation/native';
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Clipboard } from 'react-native';
 import api from "../services/api";
 import {theme} from "../theme";
-import axios from "axios";
 import LoadingDots from "react-native-loading-dots";
 import Toast from "react-native-toast-message";
 import {useAuth} from "../contexts/AuthContext";
+import {BASE_URL, FLASK_PORT} from "@env";
 
 type TelaPortasNavigationProp = NavigationProp<ParamListBase>;
 
@@ -68,43 +68,35 @@ const Portas: React.FC<Props> = ({navigation}) => {
     navigation.navigate('AddDoor', {porta});
   };
 
-  const solicitarEntrada = async (code: string) => {
+  const solicitarEntrada = async () => {
     try {
       if (!token) {
         console.error('Token não encontrado');
         return;
       }
 
-      // const response = await api.post(`/doors/${code}/openremote`, {
-      //   headers: {
-      //     'Authorization': `Bearer ${token}`,
-      //     'Content-Type': 'application/json',
-      //   },
-      // });
-
-      Toast.show({
-        type: 'success',
-        text1: 'Sucesso!',
-        text2: 'Solicitação de abertura feita!',
-        visibilityTime: 5000
+      const openResponse = await fetch(`${BASE_URL}:${FLASK_PORT}/open`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
-      // if (response.status === 200) {
-        const openResponse = await axios.post('http://192.168.100.229:5555/open', {
-          headers: {
-            'Content-Type': 'application/json',
-          },
+      if (openResponse.status !== 200) {
+        Toast.show({
+          type: 'error',
+          text1: 'Erro!',
+          text2: 'Falha ao abrir a porta.',
+          visibilityTime: 5000
         });
-
-        if (openResponse.status !== 200) {
+      }else{
           Toast.show({
-            type: 'error',
-            text1: 'Erro!',
-            text2: 'Falha ao abrir a porta.',
-            visibilityTime: 5000
+              type: 'success',
+              text1: 'Sucesso!',
+              text2: 'Porta aberta com sucesso!',
+              visibilityTime: 5000
           });
-        }
-      // }
+      }
     } catch (error) {
       Toast.show({
         type: 'error',
@@ -158,6 +150,16 @@ const Portas: React.FC<Props> = ({navigation}) => {
     }
   }
 
+  const copyToClipboard = (text: any) => {
+    Clipboard.setString(text);
+    Toast.show({
+      type: 'success',
+      text1: 'Copiado!',
+      text2: 'Serial copiado para a área de transferência.',
+      visibilityTime: 2000,
+    });
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingScreen}>
@@ -186,10 +188,14 @@ const Portas: React.FC<Props> = ({navigation}) => {
         renderItem={({item}) => (
           <View style={styles.tableRow}>
             <Text style={styles.tableCell}>{item.description}</Text>
-            <Text style={styles.tableCell}>{item.identification}</Text>
+            <TouchableOpacity onPress={() => copyToClipboard(item.identification)}>
+              <Text style={[styles.tableCell, styles.copyText]}>
+                {item.identification}
+              </Text>
+            </TouchableOpacity>
             <View style={styles.actionButtons}>
               {role === 'superuser' && (
-                <TouchableOpacity onPress={() => solicitarEntrada(item.id)} style={styles.actionButton}>
+                <TouchableOpacity onPress={() => solicitarEntrada()} style={styles.actionButton}>
                   <Ionicons name="lock-open-outline" size={20} color={theme.colors.primary}/>
                 </TouchableOpacity>
               )}
@@ -199,7 +205,8 @@ const Portas: React.FC<Props> = ({navigation}) => {
                 </TouchableOpacity>
               )}
               {(role === 'admin' || role === 'superuser') && (
-                <TouchableOpacity onPress={() => handleDeleteDoors(item.id)} style={styles.actionButton}>
+                <TouchableOpacity onPress={() => handleDeleteDoors(item.id)}
+                                  style={styles.actionButton}>
                   <Ionicons name="trash-outline" size={20} color={theme.colors.primary}/>
                 </TouchableOpacity>
               )}
@@ -254,6 +261,10 @@ const styles = StyleSheet.create({
   },
   dotsWrapper: {
     width: 100,
+  },
+  copyText: {
+    textDecorationLine: 'underline',
+    fontWeight: 'bold',
   },
   tableCell: {
     flex: 1,
